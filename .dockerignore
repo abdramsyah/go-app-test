@@ -1,0 +1,6 @@
+# Executable file
+bin/
+.git
+node_modules
+*.log
+Dockerfile
