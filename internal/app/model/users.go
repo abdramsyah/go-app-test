@@ -22,5 +22,5 @@ type User struct {
 }
 
 func (c *User) TableName() string {
-	return "educatix.users"
+	return "users"
 }

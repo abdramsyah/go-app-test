@@ -24,5 +24,5 @@ type Admin struct {
 
 // TableName sets the insert table name for this struct type
 func (a *Admin) TableName() string {
-	return "educatix.admins"
+	return "admins"
 }

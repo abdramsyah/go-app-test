@@ -17,7 +17,7 @@ type Role struct {
 }
 
 func (m *Role) TableName() string {
-	return "educatix.roles"
+	return "roles"
 }
 
 func (m *Role) BeforeDelete(tx *gorm.DB) (err error) {

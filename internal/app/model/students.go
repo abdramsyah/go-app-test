@@ -24,5 +24,5 @@ type Student struct {
 
 // TableName sets the table name for the Student struct.
 func (Student) TableName() string {
-	return "educatix.students"
+	return "students"
 }

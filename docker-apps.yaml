@@ -1,0 +1,64 @@
+version: "3.8"
+
+name: "app-go"
+services:
+  # MongoDB Service
+  mongo:
+    image: mongo:latest
+    container_name: mongodb-1
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: examplepassword
+    ports:
+      - "27017:27017"
+    # volumes:
+    #   # Uncomment if you want to persist MongoDB data locally
+    #   - "/data/db"
+    networks:
+      - app-network
+
+  # PostgreSQL Service
+  postgres:
+    image: postgres:14
+    container_name: postgres-go
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      # Uncomment if you want to persist PostgreSQL data locally
+      - "/var/lib/postgresql/data"
+    networks:
+      - app-network
+
+  # Redis Service
+  redis:
+    image: redis:latest
+    container_name: redis-go
+    ports:
+      - "6379:6379"
+    volumes:
+      # Uncomment if you want to persist Redis data locally
+      - "/data"
+    networks:
+      - app-network
+
+  # Redis Commander Service (Web UI for Redis)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    environment:
+      REDIS_HOSTS: local:redis:6379
+      HTTP_USER: root
+      HTTP_PASSWORD: root
+    ports:
+      - "8087:8081"
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+# Define a common network for all services
+networks:
+  app-network:
+    driver: bridge

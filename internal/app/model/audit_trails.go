@@ -63,5 +63,5 @@ type AuditTrails struct {
 
 // TableName sets the insert table name for this struct type
 func (a *AuditTrails) TableName() string {
-	return "educatix.audit_trails"
+	return "audit_trails"
 }

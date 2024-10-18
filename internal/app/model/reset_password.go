@@ -19,5 +19,5 @@ type ResetPassword struct {
 }
 
 func (ResetPassword) TableName() string {
-	return "educatix.reset_passwords"
+	return "reset_passwords"
 }
