@@ -17,21 +17,21 @@ type UserHandler struct {
 	HandlerOption
 }
 
-// func (h UserHandler) GetPermission(c echo.Context) (resp dto.HttpResponse) {
-// 	actx, err := util.NewAppContext(c)
-// 	if err != nil {
-// 		return
-// 	}
-// 	userID := actx.GetUserID()
-// 	res, err := h.Services.User.GetPermissions(actx, userID)
-// 	if err != nil {
-// 		resp = dto.FailedHttpResponse(err, nil)
-// 		return
-// 	}
+func (h UserHandler) GetPermission(c echo.Context) (resp dto.HttpResponse) {
+	actx, err := util.NewAppContext(c)
+	if err != nil {
+		return
+	}
+	userID := actx.GetUserID()
+	res, err := h.Services.User.GetPermissions(actx, userID)
+	if err != nil {
+		resp = dto.FailedHttpResponse(err, nil)
+		return
+	}
 
-// 	resp = dto.SuccessHttpResponse(http.StatusOK, "", "Berhasil mendapatkan akses pengguna", res)
-// 	return
-// }
+	resp = dto.SuccessHttpResponse(http.StatusOK, "", "Berhasil mendapatkan akses pengguna", res)
+	return
+}
 
 func (h UserHandler) RetrievedList(c echo.Context) (resp dto.HttpResponse) {
 	pConfig := util.GeneratePaginateConfig(c)
@@ -103,7 +103,6 @@ func (h UserHandler) FindByID(c echo.Context) (resp dto.HttpResponse) {
 			Name:     user.Role.Name,
 			RoleType: user.Role.RoleType,
 		},
-		PathImage: user.PathImage,
 	}
 
 	resp = dto.SuccessHttpResponse(http.StatusOK, "", "Berhasil mendapatkan detail User", result)

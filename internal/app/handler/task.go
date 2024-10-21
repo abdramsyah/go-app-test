@@ -15,22 +15,6 @@ type TaskHandler struct {
 	HandlerOption
 }
 
-// func (h TaskHandler) GetPermission(c echo.Context) (resp dto.HttpResponse) {
-// 	actx, err := util.NewAppContext(c)
-// 	if err != nil {
-// 		return
-// 	}
-// 	userID := actx.GetUserID()
-// 	res, err := h.Services.Task.GetPermissions(actx, userID)
-// 	if err != nil {
-// 		resp = dto.FailedHttpResponse(err, nil)
-// 		return
-// 	}
-
-// 	resp = dto.SuccessHttpResponse(http.StatusOK, "", "Berhasil mendapatkan akses pengguna", res)
-// 	return
-// }
-
 func (h TaskHandler) RetrievedList(c echo.Context) (resp dto.HttpResponse) {
 	pConfig := util.GeneratePaginateConfig(c)
 	filter := new(dto.TaskFilter)

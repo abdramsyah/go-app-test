@@ -1,8 +1,6 @@
 package dto
 
 import (
-	"time"
-
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
@@ -32,18 +30,11 @@ func (r RegisterRequest) Validate() error {
 }
 
 type RegisterStudentRequest struct {
-	Name        string    `json:"name" tag:"Name"`
-	Email       string    `json:"email" tag:"email"`
-	PhoneNumber string    `json:"phone_number" tag:"phone_number"`
-	Password    string    `json:"password" tag:"password"`
-	RoleID      uint      `json:"role_id" tag:"role_id"`
-	NISN        string    `json:"nisn" tag:"nisn"`
-	BirthPlace  string    `json:"birth_place" tag:"birth_place"`
-	BirthDate   time.Time `json:"birth_date" tag:"birth_date"`
-	ParentName  string    `json:"parent_name" tag:"parent_name"`
-	ParentPhone string    `json:"parent_phone" tag:"parent_phone"`
-	SchoolID    uint      `json:"school_id" tag:"school_id"`
-	ClassID     uint      `json:"class_id" tag:"class_id"`
+	Name        string `json:"name" tag:"Name"`
+	Email       string `json:"email" tag:"email"`
+	RoleID      uint   `json:"role_id" tag:"role_id"`
+	PhoneNumber string `json:"phone_number" tag:"phone_number"`
+	Password    string `json:"password" tag:"password"`
 }
 
 func (r RegisterStudentRequest) Validate() error {
@@ -64,23 +55,6 @@ func (r RegisterStudentRequest) Validate() error {
 			validation.Length(0, 100).Error("Password must be between 0 and 100 characters")),
 		validation.Field(&r.RoleID,
 			validation.Required.Error("Role ID is required")),
-		validation.Field(&r.NISN,
-			validation.Length(0, 100).Error("NISN must be between 0 and 100 characters")),
-		validation.Field(&r.BirthPlace,
-			validation.Length(0, 100).Error("Birth place must be between 0 and 100 characters")),
-		validation.Field(&r.BirthDate,
-			validation.Required.Error("Birth date is required")),
-		validation.Field(&r.ParentName,
-			validation.Required.Error("Parent name is required"),
-			validation.Length(1, 100).Error("Parent name must be between 1 and 100 characters")),
-		validation.Field(&r.ParentPhone,
-			validation.Required.Error("Parent phone is required"),
-			validation.Length(0, 15).Error("Parent phone must be between 0 and 15 characters"),
-			is.Digit.Error("Parent phone must contain only digits")),
-		validation.Field(&r.SchoolID,
-			validation.Required.Error("School ID is required")),
-		validation.Field(&r.ClassID,
-			validation.Required.Error("Class ID is required")),
 	)
 }
 

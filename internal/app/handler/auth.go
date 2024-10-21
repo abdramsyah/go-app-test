@@ -16,7 +16,7 @@ type AuthHandler struct {
 
 func (h AuthHandler) Register(c echo.Context) (resp dto.HttpResponse) {
 	var err error
-	req := new(dto.RegisterStudentRequest)
+	req := new(dto.RegisterRequest)
 	if err = c.Bind(req); err != nil {
 		h.HandlerOption.Options.Logger.Error("Error bind request",
 			zap.Error(err),

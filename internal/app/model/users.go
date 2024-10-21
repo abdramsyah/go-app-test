@@ -13,7 +13,6 @@ type User struct {
 	Username     string `gorm:"size:100;not null"`
 	PasswordHash string `gorm:"size:100;not null"`
 	PhoneNumber  string `gorm:"size:20;not null"`
-	PathImage    string
 	RoleID       uint
 	Role         *Role
 	CreatedBy    uint

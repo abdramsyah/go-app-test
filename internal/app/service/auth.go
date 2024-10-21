@@ -25,7 +25,7 @@ import (
 )
 
 type IAuthService interface {
-	Register(ctx echo.Context, req *dto.RegisterStudentRequest) (err error)
+	Register(ctx echo.Context, req *dto.RegisterRequest) (err error)
 	Login(ctx echo.Context, req *dto.LoginRequest) (jwtToken dto.JwtToken, err error)
 	Logout(ctx echo.Context, userID uint, accessUUID string) (err error)
 	RefreshToken(ctx echo.Context, refreshToken string) (jwtToken dto.JwtToken, err error)
@@ -151,7 +151,7 @@ func (s *authService) storeToRedis(tokenType string, uuid string, userID uint, d
 	return
 }
 
-func (s *authService) Register(ctx echo.Context, req *dto.RegisterStudentRequest) (err error) {
+func (s *authService) Register(ctx echo.Context, req *dto.RegisterRequest) (err error) {
 	_, err = s.opt.Repository.User.FindByEmail(ctx, req.Email)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		s.opt.Logger.With(zap.String("RequestID", "register")).Warn("Error get user",
@@ -170,23 +170,13 @@ func (s *authService) Register(ctx echo.Context, req *dto.RegisterStudentRequest
 		Name:         req.Name,
 		PhoneNumber:  req.PhoneNumber,
 		PasswordHash: req.Password,
-	}
-
-	student := &model.Student{
-		NISN:        req.NISN,
-		BirthPlace:  req.BirthPlace,
-		BirthDate:   req.BirthDate,
-		ExamGroup:   "campuran",
-		ParentName:  req.ParentName,
-		ParentPhone: req.ParentPhone,
-		SchoolID:    req.SchoolID,
-		ClassID:     req.ClassID,
+		RoleID:       req.RoleID,
 	}
 
 	tx := s.opt.DB.Begin()
-	err = s.createUser(user, student, tx)
+	err = s.createUser(user, tx)
 	if err != nil {
-		s.opt.Logger.With(zap.String("RequestID", "register")).Error("Error create user student",
+		s.opt.Logger.With(zap.String("RequestID", "register")).Error("Error create user user",
 			zap.Error(err),
 		)
 		err = util.ErrInternalServerError()
@@ -197,7 +187,7 @@ func (s *authService) Register(ctx echo.Context, req *dto.RegisterStudentRequest
 	return
 }
 
-func (s *authService) createUser(user *model.User, student *model.Student, tx *gorm.DB) (err error) {
+func (s *authService) createUser(user *model.User, tx *gorm.DB) (err error) {
 	password := user.PasswordHash
 	passwordHash, err := util.HashPassword(password)
 	if err != nil {
@@ -209,7 +199,7 @@ func (s *authService) createUser(user *model.User, student *model.Student, tx *g
 	}
 
 	user.PasswordHash = passwordHash
-	ID, err := s.opt.Repository.User.Create(user, tx)
+	_, err = s.opt.Repository.User.Create(user, tx)
 	if err != nil {
 		s.opt.Logger.With(zap.String("RequestID", "register")).Error("Error create user",
 			zap.Error(err),
@@ -217,17 +207,6 @@ func (s *authService) createUser(user *model.User, student *model.Student, tx *g
 		err = util.ErrUnknownError("Gagal untuk menambahkan pengguna")
 		return
 	}
-
-	student.UserID = ID
-	err = s.opt.Repository.Student.Create(student, tx)
-	if err != nil {
-		s.opt.Logger.With(zap.String("RequestID", "register")).Error("Error create student",
-			zap.Error(err),
-		)
-		err = util.ErrUnknownError("Gagal untuk menambahkan student")
-		return
-	}
-
 	return
 }
 

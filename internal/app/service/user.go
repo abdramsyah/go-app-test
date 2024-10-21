@@ -1,21 +1,17 @@
 package service
 
 import (
-	"context"
-	"encoding/base64"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"go-tech/internal/app/commons"
 	"go-tech/internal/app/constant"
 	"go-tech/internal/app/dto"
 	"go-tech/internal/app/model"
 	"go-tech/internal/app/util"
-	"log"
-	"strings"
 	"sync"
 
+	"github.com/casbin/casbin/v2"
 	"github.com/labstack/echo/v4"
-	"github.com/minio/minio-go/v7"
 	"github.com/spf13/cast"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -30,6 +26,7 @@ type IUserService interface {
 	Update(ctx echo.Context, userID uint, req *dto.UpdateUserRequest) (err error)
 	FindUserByID(ctx echo.Context, ID uint) (user model.User, err error)
 	Delete(ctx echo.Context, ID uint) (err error)
+	GetPermissions(ctx echo.Context, userID uint) (permissions map[string]interface{}, err error)
 }
 
 type userService struct {
@@ -233,14 +230,6 @@ func (s *userService) Create(ctx echo.Context, req *dto.CreateUserRequest) (err 
 	}
 
 	tx := s.opt.DB.Begin()
-
-	if req.ProfileImage != "" {
-		path, err := s.uploadimage(actx.Request().Context(), "master-data", "admin/", req.ProfileImage)
-		if err != nil {
-			return err
-		}
-		user.PathImage = path
-	}
 	err = s.createUser(actx, user, tx)
 	if err != nil {
 		s.opt.Logger.With(zap.String("RequestID", util.GetRequestID(actx))).Error("Error create user",
@@ -251,52 +240,6 @@ func (s *userService) Create(ctx echo.Context, req *dto.CreateUserRequest) (err 
 	}
 	tx.Commit()
 	return
-}
-
-func (s *userService) uploadimage(ctx context.Context, bucketName, path, base64Image string) (string, error) {
-	fileName := util.RandomString(20)
-	if strings.Contains(base64Image, "data:image/png") {
-		fileName += ".png"
-	} else if strings.Contains(base64Image, "data:image/jpeg") {
-		fileName += ".jpeg"
-	}
-
-	// Decode string base64
-	base64Image = strings.TrimPrefix(base64Image, "data:image/png;base64,")
-	base64Image = strings.TrimPrefix(base64Image, "data:image/jpeg;base64,")
-
-	imgData, err := base64.StdEncoding.DecodeString(base64Image)
-	if err != nil {
-		s.opt.Logger.Error("Failed decoding base64 string", zap.Error(err))
-		return "", err
-	}
-
-	// Tentukan tipe MIME file berdasarkan ekstensi
-	var contentType string
-	if strings.HasSuffix(fileName, ".png") {
-		contentType = "image/png"
-	} else if strings.HasSuffix(fileName, ".jpg") || strings.HasSuffix(fileName, ".jpeg") {
-		contentType = "image/jpeg"
-	} else {
-		s.opt.Logger.Error("unsupported file format")
-		return "", fmt.Errorf("unsupported file format")
-	}
-
-	// Set bucket name dan object name
-	objectName := path + fileName
-
-	// Upload file ke MinIO
-	uploadInfo, err := s.opt.Minio.PutObject(ctx, bucketName, objectName, strings.NewReader(string(imgData)), int64(len(imgData)), minio.PutObjectOptions{
-		ContentType: contentType,
-	})
-
-	if err != nil {
-		s.opt.Logger.Error("error uploading file to Minio", zap.Error(err))
-		return "", err
-	}
-
-	log.Printf("Successfully uploaded %s with size %d. Location: %s\n", uploadInfo.Key, uploadInfo.Size, uploadInfo.Location)
-	return objectName, nil
 }
 
 func (s *userService) createUser(actx echo.Context, user *model.User, tx *gorm.DB) (err error) {
@@ -347,7 +290,6 @@ func (s *userService) Update(ctx echo.Context, userID uint, req *dto.UpdateUserR
 		Username:     req.Username,
 		PhoneNumber:  req.PhoneNumber,
 		PasswordHash: req.Password,
-		PathImage:    req.ProfileImage,
 		RoleID:       cast.ToUint(req.RoleID),
 	}
 
@@ -401,14 +343,6 @@ func (s *userService) Update(ctx echo.Context, userID uint, req *dto.UpdateUserR
 
 	tx := s.opt.DB.Begin()
 
-	if req.ProfileImage != "" {
-		path, err := s.uploadimage(actx.Request().Context(), "master-data", "admin/", req.ProfileImage)
-		if err != nil {
-			return err
-		}
-		user.PathImage = path
-	}
-
 	password := user.PasswordHash
 	passwordHash, err := util.HashPassword(password)
 	if err != nil {
@@ -425,7 +359,6 @@ func (s *userService) Update(ctx echo.Context, userID uint, req *dto.UpdateUserR
 		"email":        user.Email,
 		"phone_number": user.PhoneNumber,
 		"updated_by":   user.UpdatedBy,
-		"path_image":   user.PathImage,
 		"role_id":      user.RoleID,
 	}
 	if user.PasswordHash != "0" {
@@ -473,6 +406,26 @@ func (s *userService) Delete(ctx echo.Context, ID uint) (err error) {
 		} else {
 			err = util.ErrUnknownError("Gagal menghapus user")
 		}
+	}
+	return
+}
+
+func (s *userService) GetPermissions(ctx echo.Context, userID uint) (permissions map[string]interface{}, err error) {
+	subject := util.FormatRbacSubject(userID)
+	permissionsB, err := casbin.CasbinJsGetPermissionForUserOld(s.opt.Rbac, subject)
+	if err != nil {
+		s.opt.Logger.With(zap.String("RequestID", util.GetRequestID(ctx))).Error("Error get user's permissions",
+			zap.Error(err),
+		)
+		err = util.ErrUnknownError("Gagal mendapatkan hak akses pengguna")
+		return
+	}
+	err = json.Unmarshal(permissionsB, &permissions)
+	if err != nil {
+		s.opt.Logger.With(zap.String("RequestID", util.GetRequestID(ctx))).Error("Error unmarshal permissions data",
+			zap.Error(err),
+		)
+		err = util.ErrUnknownError("Gagal mendapatkan hak akses pengguna")
 	}
 	return
 }
